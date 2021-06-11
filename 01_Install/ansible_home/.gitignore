@@ -1,0 +1,4 @@
+*.sh
+hosts
+cloud_env.conf
+*.[0-9]*

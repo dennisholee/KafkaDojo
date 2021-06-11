@@ -1,0 +1,50 @@
+- hosts: brokers
+  become: yes
+  tasks:
+
+  - name: Set Broker ID
+    set_fact:
+      broker_id: "{{ groups['brokers'].index(inventory_hostname) + 1 }}"
+
+  - name: install openjdk
+    apt:
+      name: openjdk-11-jdk
+      state: present
+
+  - name: download zookeeper
+    get_url:
+      url: https://mirror-hk.koddos.net/apache/zookeeper/zookeeper-3.7.0/apache-zookeeper-3.7.0-bin.tar.gz
+      dest: /opt
+        # mode: '0440'
+  
+  - name: extract zookeeper
+    ansible.builtin.unarchive:
+      src: /opt/apache-zookeeper-3.7.0-bin.tar.gz
+      dest: /opt/
+      remote_src: yes
+      creates: /opt/apache-zookeeper
+
+  - name: Copy zookeeper script to /etc/init.d
+    ansible.builtin.copy:
+      src: zookeeper
+      dest: /etc/init.d/zookeeper
+      owner: root
+      group: root
+      mode: '0755'
+
+  - name: 
+    command: update-rc.d zookeeper defaults 3 5
+
+  - name: Copy zookeeper configuration file to remote host
+    ansible.builtin.copy:
+      src: zoo.cfg
+      dest: /opt/apache-zookeeper-3.7.0-bin/conf/zoo.cfg
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: Add broker ID to each host
+    lineinfile:
+      path: /tmp/zookeeper/myid
+      line: "{{ broker_id }}"
+      create: yes
