@@ -220,9 +220,47 @@ baseOffset: 0 lastOffset: 0 count: 1 baseSequence: -1 lastSequence: -1 producerI
 | offset: 0 CreateTime: 1623374406869 keysize: -1 valuesize: 9 sequence: -1 headerKeys: [] payload: message_1
 ```
 
+## SSH Tunnelling
+
+Add virtual IP address
+
+```
+sudo ifconfig lo0 alias 127.0.0.2 up
+sudo ifconfig lo0 alias 127.0.0.3 up
+sudo ifconfig lo0 alias 127.0.0.4 up
+```
+
+Add kafka advertised listener to the hosts file
+
+```
+# /etc/hosts
+127.0.0.2 ${kafka_broker1}
+127.0.0.3 ${kafka_broker2}
+127.0.0.4 ${kafka_broker3}
+
+```
+
+Add SSH tunnel between local env to the remote kafka brokers.
+
+Approach 1:
+
+```
+ssh -L ${local_host}:${local_port}:${remote_local_host}:${remote_local_port} ${ssh_username}@${host1_public_ip}
+```
+
+Approach 2:
+
+```
+# ~/.ssh/config
+Host kafka${n}
+  Hostname ${host1_public_ip}
+  User ${ssh_username}
+  LocalForward ${local_host}:${local_port} ${remote_local_host}:${remote_local_port}
+```
+
 # Errors
 
-Replication factor: 1 larger than available brokers: 0.
+## Replication factor: 1 larger than available brokers: 0.
 
 ```
 kafka-topics --zookeeper localhost:2181/kafka --create --topic test --replication-factor 1 --partitions 3
@@ -248,4 +286,12 @@ zkCli.sh
 [zk: localhost:2181(CONNECTED) 4] get /brokers/ids/0
 {"features":{},"listener_security_protocol_map":{"PLAINTEXT":"PLAINTEXT"},"endpoints":["PLAINTEXT://localhost.localdomain:9092"],"jmx_port":-1,"port":9092,"host":"localhost.localdomain","version":5,"timestamp":"1623288007386"}
 [zk: localhost:2181(CONNECTED) 5] qui
+```
+
+## The size of the current ISR Set(3) is insufficient to satisfy the min.isr requirement of 2 for partition
+
+Kafka cluster setup is comprised of 3 Kafka brokers.
+The following config specifies the minimum insync replicas to be 3, which is not possible because there are only 3 brokers and therefore only 2 replicas hence the error.
+```
+kafka-topics --bootstrap-server localhost:9092 --create --topic topic-1p3r --partitions 1 --replication-factor 3 --config min.insync.replicas=3
 ```

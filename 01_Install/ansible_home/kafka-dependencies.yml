@@ -63,10 +63,10 @@
       state: present
       update_cache: yes
 
-  - name: Copy zookeeper configuration file to remote host
+  - name: Copy Kafka Server JAAS config 
     ansible.builtin.copy:
-      src: zoo.cfg
-      dest: /opt/apache-zookeeper-3.7.0-bin/conf/zoo.cfg
+      src: kafka_server.jaas
+      dest: /etc/kafka/kafka_server.jaas
       owner: root
       group: root
       mode: '0644'

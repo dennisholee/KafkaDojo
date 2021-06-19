@@ -48,3 +48,9 @@
       path: /tmp/zookeeper/myid
       line: "{{ broker_id }}"
       create: yes
+
+  - name: Create zookeeper symbolic link
+    ansible.builtin.file:
+      src: /opt/apache-zookeeper-3.7.0-bin
+      dest: /opt/apache-zookeeper
+      state: link
