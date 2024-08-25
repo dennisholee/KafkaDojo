@@ -1,0 +1,112 @@
+workspace {
+     
+    model {
+    
+        user = Person "User"
+        
+        kafka = softwareSystem "Kafka"
+        
+        jaeger = softwareSystem "Jaeger All-in-One" {
+            storage = container "Storage"
+        
+            openTelemetryCollector = container "OpenTelemetry Collector"
+            
+            jaegerCollector = container "Jaeger Collector" {
+                openTelemetryCollector -> this "Collect trace data"
+                this -> storage "Trace data"
+            }
+            
+            jaegerQuery = container "Jaeger Query" {
+                this -> storage "Query trace data"
+            }
+            
+            jaegerWeb = container "Jaeger UI" {
+                this -> jaegerQuery "Get performance metrics"
+                user -> this "Visualize traces and performance metrics"
+            }
+        }
+        
+        alphaApplication = softwareSystem "Alpha Application" {
+         
+            webUI = container "Web UI" {
+            
+                restController = component "REST Controller" {
+                    user -> this "Request publish message" "REST / HTTP"
+                }
+            
+                publishMessageApp = component "Publish Message App" {
+                    restController -> this "Publish Message Command"
+                }
+                
+                betaGateway = component "Beta Kafka Gateway" {
+                    publishMessageApp -> this "Do foo"
+                    this -> kafka "Dispatch Kafka Message" "TCP"
+                }
+                 
+                springActuator = component "Spring Boot Actuator"
+                
+                micrometerCore = component "Micrometer Core" {
+                    springActuator -> this
+                }
+                
+                micrometerTracer = component "Micrometer Tracer" {
+                    micrometerCore -> this
+                }
+                
+                micrometerOpenTelemetryBridge = component "Micrometer - OpenTelemetry Bridge" {
+                    micrometerTracer -> this
+                }
+                
+                openTelemetryExporter = component "Open Telemetry Exporter" "Reports traces to a collector that can accept OTLP" {
+                    micrometerOpenTelemetryBridge -> this
+                    this -> openTelemetryCollector "Trace data" "HTTP 4318"
+                }
+                
+                
+                
+            }
+        }
+    }
+
+    views {
+        systemLandscape {
+            include *
+            autoLayout
+        }
+        
+        systemContext alphaApplication {
+            include *
+            autoLayout
+        }
+        
+        container alphaApplication {
+            include *
+            autoLayout lr
+        }
+        
+        container jaeger {
+            include *
+            autoLayout lr
+        }
+        
+        component webUI {
+            include *
+            autoLayout lr
+        }
+        
+    
+        theme default
+        
+        styles {
+            element kafka {
+                shape pipe
+            }
+            
+            element database {
+                shape cylinder
+            }
+        }
+
+    }
+    
+}
